@@ -108,12 +108,12 @@ export default function Home() {
         <section id="home" className="relative text-center py-20 md:py-32 overflow-hidden">
            <div className="absolute inset-0 z-0">
              <Image
-              src="https://source.unsplash.com/t9KN97BinLY"
-              alt="Cheerful surgeons with arms crossed"
+              src="https://images.pexels.com/photos/339620/pexels-photo-339620.jpeg"
+              alt="Cozy living room with a bicycle"
               layout="fill"
               objectFit="cover"
               priority
-              data-ai-hint="surgeons team"
+              data-ai-hint="living room"
             />
             <div className="absolute inset-0 bg-black/50" />
            </div>
