@@ -105,18 +105,28 @@ export default function Home() {
       <Header />
       <main className="flex-1">
         {/* Hero Section */}
-        <section id="home" className="relative text-center py-20 md:py-32 bg-primary/20 overflow-hidden">
-          <div className="container z-10 relative">
-            <HeartHandshake className="mx-auto h-16 w-16 text-primary mb-4" />
-            <h1 className="font-headline text-4xl md:text-6xl font-bold text-primary-foreground tracking-tight">Your Health, Our Priority</h1>
-            <p className="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-primary-foreground/80">
+        <section id="home" className="relative text-center py-20 md:py-32 overflow-hidden">
+           <div className="absolute inset-0 z-0">
+             <Image
+              src="https://placehold.co/1920x1080.png"
+              alt="Comforting healthcare professional"
+              fill
+              className="object-cover"
+              priority
+              data-ai-hint="healthcare professional"
+            />
+            <div className="absolute inset-0 bg-black/50" />
+           </div>
+          <div className="container z-10 relative text-white">
+            <HeartHandshake className="mx-auto h-16 w-16 text-white mb-4" />
+            <h1 className="font-headline text-4xl md:text-6xl font-bold tracking-tight">Your Health, Our Priority</h1>
+            <p className="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-white/90">
               Welcome to Serene Appointments. Effortlessly book and manage your medical consultations online.
             </p>
             <Button size="lg" className="mt-8 bg-accent text-accent-foreground hover:bg-accent/90" asChild>
               <a href="#doctors">Find a Doctor</a>
             </Button>
           </div>
-          <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(to_bottom,white,transparent)] z-0"></div>
         </section>
 
         {/* About Us Section */}
