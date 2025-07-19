@@ -3,7 +3,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { HeartHandshake, Building, LogOut } from 'lucide-react';
+import { HeartHandshake, Building, LogOut, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePathname, useRouter } from 'next/navigation';
 
@@ -52,9 +52,14 @@ export function Header() {
         )}
         <div className="flex flex-1 items-center justify-end space-x-4">
            {pathname === '/admin' && isAdminLoggedIn ? (
-             <Button onClick={handleLogout} variant="outline">
-                <LogOut /> Logout
-             </Button>
+            <>
+              <Button asChild variant="secondary">
+                <Link href="/"><Home className="mr-2 h-4 w-4" /> Go to Main Site</Link>
+              </Button>
+              <Button onClick={handleLogout} variant="outline">
+                  <LogOut className="mr-2 h-4 w-4" /> Logout
+              </Button>
+            </>
            ) : pathname !== '/login' && pathname !== '/admin' ? (
              <>
                 <Button asChild>
