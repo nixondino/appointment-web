@@ -27,14 +27,15 @@ export interface Appointment {
   reason: string;
 }
 
-const generateAvailability = () => {
+const generateInitialAvailability = () => {
   const availability: { [key: string]: string[] } = {};
   const today = new Date();
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 30; i++) { // Generate for 30 days
     const date = new Date(today);
     date.setDate(today.getDate() + i);
     const dateString = format(date, 'yyyy-MM-dd');
     const times = [];
+    // Simulate some default availability
     for (let j = 9; j < 17; j++) {
       if (Math.random() > 0.3) times.push(`${j.toString().padStart(2, '0')}:00`);
       if (Math.random() > 0.5) times.push(`${j.toString().padStart(2, '0')}:30`);
@@ -46,14 +47,15 @@ const generateAvailability = () => {
   return availability;
 };
 
-export const doctors: Doctor[] = [
+
+let doctorsData: Doctor[] = [
   {
     id: 1,
     name: 'Dr. Evelyn Reed',
     specialization: 'Cardiologist',
     bio: 'Dr. Reed has over 15 years of experience in cardiac care and is dedicated to patient wellness and preventative medicine.',
     image: 'https://placehold.co/100x100.png',
-    availability: generateAvailability(),
+    availability: generateInitialAvailability(),
   },
   {
     id: 2,
@@ -61,7 +63,7 @@ export const doctors: Doctor[] = [
     specialization: 'Dermatologist',
     bio: 'Specializing in both medical and cosmetic dermatology, Dr. Thorne is a leader in innovative skin treatments.',
     image: 'https://placehold.co/100x100.png',
-    availability: generateAvailability(),
+    availability: generateInitialAvailability(),
   },
   {
     id: 3,
@@ -69,9 +71,30 @@ export const doctors: Doctor[] = [
     specialization: 'Pediatrician',
     bio: 'With a passion for children\'s health, Dr. Grant provides compassionate and comprehensive care for infants, children, and adolescents.',
     image: 'https://placehold.co/100x100.png',
-    availability: generateAvailability(),
+    availability: generateInitialAvailability(),
   },
 ];
+
+
+export let doctors: Doctor[] = [...doctorsData];
+
+export const updateDoctorAvailability = (doctorId: number, date: string, times: string[]): Doctor[] => {
+  doctorsData = doctorsData.map(doctor => {
+    if (doctor.id === doctorId) {
+      const newAvailability = { ...doctor.availability };
+      if (times.length > 0) {
+        newAvailability[date] = times;
+      } else {
+        delete newAvailability[date]; // Remove date if no times are available
+      }
+      return { ...doctor, availability: newAvailability };
+    }
+    return doctor;
+  });
+  doctors = [...doctorsData]; // Update the exported variable
+  return doctors;
+};
+
 
 export const testimonials: Testimonial[] = [
   {
@@ -99,3 +122,5 @@ export const testimonials: Testimonial[] = [
     image: 'https://placehold.co/80x80.png',
   },
 ];
+
+    
