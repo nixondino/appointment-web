@@ -11,13 +11,15 @@ import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Users, CalendarDays, Clock, Trash2, Loader2, User, Save, Building } from 'lucide-react';
+import { Calendar as CalendarIcon, Users, CalendarDays, Clock, Trash2, Loader2, User, Save, Building, BarChart2 } from 'lucide-react';
 import { getAppointments, deleteAppointment } from '@/services/appointmentService';
 import { doctors as initialDoctors, updateDoctorAvailability, type Doctor, type Appointment } from '@/lib/data';
 import { useToast } from "@/hooks/use-toast";
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { cn } from '@/lib/utils';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 export default function AdminPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -49,6 +51,14 @@ export default function AdminPage() {
     }
     return slots;
   }, []);
+  
+  const appointmentChartData = useMemo(() => {
+    const counts = doctors.map(doctor => ({
+        name: `Dr. ${doctor.name.split(' ').pop()}`,
+        appointments: appointments.filter(app => app.doctorName === doctor.name).length,
+    }));
+    return counts;
+  }, [appointments, doctors]);
 
   const selectedDoctor = useMemo(() => {
     return doctors.find(d => d.id === selectedDoctorId);
@@ -161,6 +171,31 @@ export default function AdminPage() {
                 Admin Dashboard
             </h1>
             <p className="text-lg text-muted-foreground mt-2">Manage appointments and doctor schedules.</p>
+        </div>
+
+        <div className="grid gap-8 mb-8">
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><BarChart2 className="h-6 w-6" />Appointments per Doctor</CardTitle>
+                    <CardDescription>A visual summary of appointments booked for each doctor.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ChartContainer config={{}} className="min-h-[200px] w-full">
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={appointmentChartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                <XAxis dataKey="name" tickLine={false} axisLine={false} />
+                                <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                                <Tooltip
+                                    cursor={{ fill: 'hsl(var(--muted))' }}
+                                    content={<ChartTooltipContent />}
+                                />
+                                <Bar dataKey="appointments" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
         </div>
         
         <div className="grid gap-8 lg:grid-cols-3">
