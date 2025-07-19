@@ -1,13 +1,29 @@
+
 "use client";
 
 import React from 'react';
 import Link from 'next/link';
-import { HeartHandshake, Building } from 'lucide-react';
+import { HeartHandshake, Building, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+        setIsAdminLoggedIn(sessionStorage.getItem('isAdminLoggedIn') === 'true');
+    }
+  }, [pathname]);
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('isAdminLoggedIn');
+    setIsAdminLoggedIn(false);
+    router.push('/login');
+  };
+
 
   const navLinks = [
     { href: '/#about', label: 'About' },
@@ -35,24 +51,22 @@ export function Header() {
           </nav>
         )}
         <div className="flex flex-1 items-center justify-end space-x-4">
-           {pathname === '/admin' ? (
-             <Button asChild variant="outline">
-                <Link href="/"><HeartHandshake /> Go to Main Site</Link>
+           {pathname === '/admin' && isAdminLoggedIn ? (
+             <Button onClick={handleLogout} variant="outline">
+                <LogOut /> Logout
              </Button>
-           ) : (
+           ) : pathname !== '/login' && pathname !== '/admin' ? (
              <>
                 <Button asChild>
                   <Link href="/#doctors">Book Now</Link>
                 </Button>
                 <Button asChild variant="secondary">
-                  <Link href="/admin"><Building /> Admin</Link>
+                  <Link href="/login"><Building /> Admin</Link>
                 </Button>
              </>
-           )}
+           ) : null}
         </div>
       </div>
     </header>
   );
 }
-
-    

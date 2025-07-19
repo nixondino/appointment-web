@@ -1,7 +1,8 @@
-// src/app/admin/page.tsx
+
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -26,7 +27,18 @@ export default function AdminPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [availability, setAvailability] = useState<Record<string, string[]>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const router = useRouter();
 
+  useEffect(() => {
+    const adminLoggedIn = sessionStorage.getItem('isAdminLoggedIn');
+    if (adminLoggedIn !== 'true') {
+      router.push('/login');
+    } else {
+      setIsAuthenticated(true);
+    }
+  }, [router]);
+  
   const { toast } = useToast();
 
   const timeSlots = useMemo(() => {
@@ -43,6 +55,7 @@ export default function AdminPage() {
   }, [selectedDoctorId, doctors]);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     const fetchAppointments = async () => {
       try {
         setIsLoading(true);
@@ -60,7 +73,7 @@ export default function AdminPage() {
       }
     };
     fetchAppointments();
-  }, [toast]);
+  }, [toast, isAuthenticated]);
 
   useEffect(() => {
     if (selectedDoctor && selectedDate) {
@@ -91,14 +104,14 @@ export default function AdminPage() {
   const handleAvailabilityChange = (time: string, checked: boolean) => {
     if (!selectedDate) return;
     const dateString = format(selectedDate, 'yyyy-MM-dd');
-    const newAvailability = { ...(availability || {}) };
+    const newAvailabilityForDate = (availability[dateString] || []);
+    let updatedTimes;
     if (checked) {
-      if (!Array.isArray(newAvailability[dateString])) newAvailability[dateString] = [];
-      newAvailability[dateString] = [...newAvailability[dateString], time].sort();
+      updatedTimes = [...newAvailabilityForDate, time].sort();
     } else {
-      newAvailability[dateString] = (newAvailability[dateString] || []).filter(t => t !== time);
+      updatedTimes = newAvailabilityForDate.filter(t => t !== time);
     }
-    setAvailability(newAvailability);
+    setAvailability(prev => ({ ...prev, [dateString]: updatedTimes }));
   };
 
   const handleSaveAvailability = async () => {
@@ -128,6 +141,15 @@ export default function AdminPage() {
     const dateString = format(selectedDate, 'yyyy-MM-dd');
     return availability[dateString] || [];
   }, [availability, selectedDate]);
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="mt-4 text-muted-foreground">Redirecting to login...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -267,5 +289,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-    
