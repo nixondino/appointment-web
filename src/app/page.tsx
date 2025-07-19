@@ -1,25 +1,49 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Stethoscope, CalendarDays, Clock, Phone, Mail, MapPin, Edit, Trash2, HeartHandshake, Quote, User } from 'lucide-react';
+import { Stethoscope, CalendarDays, Clock, Phone, Mail, MapPin, Edit, Trash2, HeartHandshake, Quote, User, Loader2 } from 'lucide-react';
 import { doctors, testimonials, type Doctor } from '@/lib/data';
 import type { Appointment } from '@/lib/data';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { BookingDialog } from '@/components/BookingDialog';
+import { addAppointment, deleteAppointment, getAppointments, updateAppointment } from '@/services/appointmentService';
+import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
   const [dialogState, setDialogState] = useState<{
     isOpen: boolean;
     doctor: Doctor | null;
     appointmentToEdit: Appointment | null;
   }>({ isOpen: false, doctor: null, appointmentToEdit: null });
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        setIsLoading(true);
+        const fetchedAppointments = await getAppointments();
+        setAppointments(fetchedAppointments);
+      } catch (error) {
+        console.error("Error fetching appointments:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Could not fetch appointments.",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAppointments();
+  }, [toast]);
 
   const handleBookNow = (doctor: Doctor) => {
     setDialogState({ isOpen: true, doctor, appointmentToEdit: null });
@@ -30,26 +54,50 @@ export default function Home() {
     setDialogState({ isOpen: true, doctor, appointmentToEdit: appointment });
   };
 
-  const handleDeleteAppointment = (id: number) => {
-    setAppointments(prev => prev.filter(app => app.id !== id));
+  const handleDeleteAppointment = async (id: string) => {
+    try {
+      await deleteAppointment(id);
+      setAppointments(prev => prev.filter(app => app.id !== id));
+      toast({
+        title: "Success",
+        description: "Appointment cancelled successfully.",
+      });
+    } catch (error) {
+       toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not cancel the appointment.",
+      });
+    }
   };
   
-  const handleSaveAppointment = (appointmentData: Omit<Appointment, 'id'>) => {
-    if (dialogState.appointmentToEdit) {
-      // Update existing appointment
-      setAppointments(prev => prev.map(app => 
-        app.id === dialogState.appointmentToEdit!.id 
-          ? { ...dialogState.appointmentToEdit!, ...appointmentData } 
-          : app
-      ));
-    } else {
-      // Add new appointment
-      setAppointments(prev => [
-        ...prev,
-        { ...appointmentData, id: Date.now() }
-      ]);
+  const handleSaveAppointment = async (appointmentData: Omit<Appointment, 'id'>, id?: string) => {
+    try {
+      if (id) {
+        const updatedAppointment = await updateAppointment(id, appointmentData);
+        setAppointments(prev => prev.map(app => 
+          app.id === id ? updatedAppointment : app
+        ));
+         toast({
+          title: "Success",
+          description: "Appointment updated successfully.",
+        });
+      } else {
+        const newAppointment = await addAppointment(appointmentData);
+        setAppointments(prev => [...prev, newAppointment]);
+        toast({
+          title: "Success",
+          description: "Appointment booked successfully.",
+        });
+      }
+      setDialogState({ isOpen: false, doctor: null, appointmentToEdit: null });
+    } catch (error) {
+       toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not save the appointment.",
+      });
     }
-    setDialogState({ isOpen: false, doctor: null, appointmentToEdit: null });
   };
 
   return (
@@ -164,7 +212,11 @@ export default function Home() {
                 View, edit, or cancel your scheduled appointments below.
               </p>
             </div>
-            {appointments.length > 0 ? (
+            {isLoading ? (
+               <div className="flex justify-center items-center p-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+               </div>
+            ) : appointments.length > 0 ? (
               <div className="space-y-6 max-w-4xl mx-auto">
                 {appointments.map((appointment) => (
                   <Card key={appointment.id} className="shadow-md overflow-hidden transition-all duration-300">

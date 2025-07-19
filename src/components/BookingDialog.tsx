@@ -13,8 +13,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { format, parse } from "date-fns";
+import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import type { Doctor, Appointment } from '@/lib/data';
 
 const appointmentSchema = z.object({
@@ -32,7 +32,7 @@ interface BookingDialogProps {
   onClose: () => void;
   doctor: Doctor | null;
   appointmentToEdit?: Appointment | null;
-  onSave: (data: Omit<Appointment, 'id'>) => void;
+  onSave: (data: Omit<Appointment, 'id'>, id?: string) => Promise<void>;
 }
 
 export function BookingDialog({ isOpen, onClose, doctor, appointmentToEdit, onSave }: BookingDialogProps) {
@@ -66,7 +66,8 @@ export function BookingDialog({ isOpen, onClose, doctor, appointmentToEdit, onSa
       const defaultValues: Partial<AppointmentFormValues> = appointmentToEdit
         ? {
             patientName: appointmentToEdit.patientName,
-            date: new Date(appointmentToEdit.date),
+            // The date from firestore is a string 'MMM d, yyyy', parse it back to Date
+            date: parse(appointmentToEdit.date, 'PPP', new Date()),
             time: appointmentToEdit.time,
             reason: appointmentToEdit.reason,
             doctorName: appointmentToEdit.doctorName,
@@ -82,18 +83,23 @@ export function BookingDialog({ isOpen, onClose, doctor, appointmentToEdit, onSa
     }
   }, [isOpen, doctor, appointmentToEdit, form]);
   
-  const handleSubmit = (values: AppointmentFormValues) => {
-    onSave({
+  const handleSubmit = async (values: AppointmentFormValues) => {
+    await onSave({
       ...values,
       date: format(values.date, 'PPP'),
-    });
+    }, appointmentToEdit?.id);
     form.reset();
   };
 
   if (!doctor) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) {
+        form.reset();
+        onClose();
+      }
+    }}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{appointmentToEdit ? "Edit Appointment" : "Book an Appointment"}</DialogTitle>
@@ -158,7 +164,7 @@ export function BookingDialog({ isOpen, onClose, doctor, appointmentToEdit, onSa
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Time</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedDate || availableTimes.length === 0}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={!selectedDate || availableTimes.length === 0}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder={!selectedDate ? "Please select a date first" : "Select a time"} />
@@ -185,7 +191,10 @@ export function BookingDialog({ isOpen, onClose, doctor, appointmentToEdit, onSa
             />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-              <Button type="submit">Save Appointment</Button>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {appointmentToEdit ? 'Save Changes' : 'Confirm Appointment'}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

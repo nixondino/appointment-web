@@ -19,7 +19,7 @@ export interface Testimonial {
 }
 
 export interface Appointment {
-  id: number;
+  id: string;
   doctorName: string;
   patientName: string;
   date: string;
