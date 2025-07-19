@@ -108,10 +108,10 @@ export default function Home() {
         <section id="home" className="relative text-center py-20 md:py-32 overflow-hidden">
            <div className="absolute inset-0 z-0">
              <Image
-              src="https://source.unsplash.com/t9KN97BinLY/1920x1080"
+              src="https://source.unsplash.com/t9KN97BinLY"
               alt="Cheerful surgeons with arms crossed"
-              fill
-              className="object-cover"
+              layout="fill"
+              objectFit="cover"
               priority
               data-ai-hint="surgeons team"
             />
