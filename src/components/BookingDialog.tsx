@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from 'react';
@@ -13,7 +14,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { cn } from "@/lib/utils";
-import { format, parse } from "date-fns";
+import { format, parse, addDays } from "date-fns";
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { doctors as allDoctors, type Doctor, type Appointment } from '@/lib/data';
 
@@ -173,9 +174,11 @@ export function BookingDialog({ isOpen, onClose, doctor: initialDoctor, doctors,
                         selected={field.value}
                         onSelect={field.onChange}
                         disabled={(date) => {
+                            const today = new Date(new Date().setHours(0, 0, 0, 0));
+                            const sevenDaysFromNow = addDays(today, 7);
                             if (!selectedDoctor) return true;
                             const dateString = format(date, 'yyyy-MM-dd');
-                            return date < new Date(new Date().setHours(0,0,0,0)) || !selectedDoctor.availability[dateString];
+                            return date < today || date > sevenDaysFromNow || !selectedDoctor.availability[dateString];
                         }}
                         initialFocus
                       />
