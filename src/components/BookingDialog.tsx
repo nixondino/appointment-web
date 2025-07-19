@@ -15,14 +15,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { cn } from "@/lib/utils";
 import { format, parse } from "date-fns";
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
-import type { Doctor, Appointment } from '@/lib/data';
+import { doctors as allDoctors, type Doctor, type Appointment } from '@/lib/data';
 
 const appointmentSchema = z.object({
   patientName: z.string().min(2, "Name must be at least 2 characters."),
   date: z.date({ required_error: "A date is required." }),
   time: z.string({ required_error: "A time is required." }),
   reason: z.string().min(10, "Please provide a brief reason for your visit."),
-  doctorName: z.string(),
+  doctorName: z.string({ required_error: "Please select a doctor." }),
 });
 
 type AppointmentFormValues = z.infer<typeof appointmentSchema>;
@@ -31,11 +31,12 @@ interface BookingDialogProps {
   isOpen: boolean;
   onClose: () => void;
   doctor: Doctor | null;
+  doctors: Doctor[];
   appointmentToEdit?: Appointment | null;
   onSave: (data: Omit<Appointment, 'id'>, id?: string) => Promise<void>;
 }
 
-export function BookingDialog({ isOpen, onClose, doctor, appointmentToEdit, onSave }: BookingDialogProps) {
+export function BookingDialog({ isOpen, onClose, doctor: initialDoctor, doctors, appointmentToEdit, onSave }: BookingDialogProps) {
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   
   const form = useForm<AppointmentFormValues>({
@@ -50,23 +51,25 @@ export function BookingDialog({ isOpen, onClose, doctor, appointmentToEdit, onSa
   });
   
   const selectedDate = form.watch('date');
+  const selectedDoctorName = form.watch('doctorName');
+  
+  const selectedDoctor = allDoctors.find(d => d.name === selectedDoctorName);
 
   useEffect(() => {
-    if (doctor && selectedDate) {
+    if (selectedDoctor && selectedDate) {
       const dateString = format(selectedDate, 'yyyy-MM-dd');
-      setAvailableTimes(doctor.availability[dateString] || []);
-      form.setValue('time', ''); // Reset time when date changes
+      setAvailableTimes(selectedDoctor.availability[dateString] || []);
+      form.setValue('time', ''); // Reset time when date or doctor changes
     } else {
       setAvailableTimes([]);
     }
-  }, [doctor, selectedDate, form]);
+  }, [selectedDoctor, selectedDate, form]);
 
   useEffect(() => {
     if (isOpen) {
       const defaultValues: Partial<AppointmentFormValues> = appointmentToEdit
         ? {
             patientName: appointmentToEdit.patientName,
-            // The date from firestore is a string 'MMM d, yyyy', parse it back to Date
             date: parse(appointmentToEdit.date, 'PPP', new Date()),
             time: appointmentToEdit.time,
             reason: appointmentToEdit.reason,
@@ -77,11 +80,11 @@ export function BookingDialog({ isOpen, onClose, doctor, appointmentToEdit, onSa
             date: undefined,
             time: '',
             reason: '',
-            doctorName: doctor?.name || '',
+            doctorName: initialDoctor?.name || '',
           };
       form.reset(defaultValues as AppointmentFormValues);
     }
-  }, [isOpen, doctor, appointmentToEdit, form]);
+  }, [isOpen, initialDoctor, appointmentToEdit, form]);
   
   const handleSubmit = async (values: AppointmentFormValues) => {
     await onSave({
@@ -90,8 +93,8 @@ export function BookingDialog({ isOpen, onClose, doctor, appointmentToEdit, onSa
     }, appointmentToEdit?.id);
     form.reset();
   };
-
-  if (!doctor) return null;
+  
+  const currentDoctor = appointmentToEdit ? allDoctors.find(d => d.name === form.getValues('doctorName')) : initialDoctor;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
@@ -104,7 +107,7 @@ export function BookingDialog({ isOpen, onClose, doctor, appointmentToEdit, onSa
         <DialogHeader>
           <DialogTitle>{appointmentToEdit ? "Edit Appointment" : "Book an Appointment"}</DialogTitle>
           <DialogDescription>
-            {`Schedule your visit with Dr. ${doctor.name}. Please fill out the details below.`}
+            {appointmentToEdit ? 'Update the details for your appointment.' : `Schedule your visit with Dr. ${initialDoctor?.name}. Please fill out the details below.`}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -120,6 +123,28 @@ export function BookingDialog({ isOpen, onClose, doctor, appointmentToEdit, onSa
                 </FormItem>
               )}
             />
+            
+            <FormField
+              control={form.control}
+              name="doctorName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Doctor</FormLabel>
+                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a doctor" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {doctors.map(d => <SelectItem key={d.id} value={d.name}>Dr. {d.name} - {d.specialization}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="date"
@@ -135,6 +160,7 @@ export function BookingDialog({ isOpen, onClose, doctor, appointmentToEdit, onSa
                             "w-full pl-3 text-left font-normal",
                             !field.value && "text-muted-foreground"
                           )}
+                           disabled={!selectedDoctorName}
                         >
                           {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -147,8 +173,9 @@ export function BookingDialog({ isOpen, onClose, doctor, appointmentToEdit, onSa
                         selected={field.value}
                         onSelect={field.onChange}
                         disabled={(date) => {
+                            if (!selectedDoctor) return true;
                             const dateString = format(date, 'yyyy-MM-dd');
-                            return date < new Date(new Date().setHours(0,0,0,0)) || !doctor.availability[dateString];
+                            return date < new Date(new Date().setHours(0,0,0,0)) || !selectedDoctor.availability[dateString];
                         }}
                         initialFocus
                       />

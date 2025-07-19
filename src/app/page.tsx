@@ -255,13 +255,16 @@ export default function Home() {
 
       </main>
       <Footer />
-      <BookingDialog 
-        isOpen={dialogState.isOpen}
-        onClose={() => setDialogState({ isOpen: false, doctor: null, appointmentToEdit: null })}
-        doctor={dialogState.doctor}
-        appointmentToEdit={dialogState.appointmentToEdit}
-        onSave={handleSaveAppointment}
-      />
+      {dialogState.isOpen && (
+         <BookingDialog 
+          isOpen={dialogState.isOpen}
+          onClose={() => setDialogState({ isOpen: false, doctor: null, appointmentToEdit: null })}
+          doctor={dialogState.doctor}
+          appointmentToEdit={dialogState.appointmentToEdit}
+          onSave={handleSaveAppointment}
+          doctors={doctors}
+        />
+      )}
     </div>
   );
 }
